@@ -5,7 +5,7 @@ Tensorflow Lecture in YOUTUBE
 """
 import tensorflow as tf
 
-# Leture1 : Data type
+    # Leture1 : Data type
  # Constant
 const1 = tf.constant([5])
 const2 = tf.constant([3])
@@ -62,7 +62,7 @@ feed_dict = {ph_image :image, ph_label:label }
 result_tensor = sess.run(result_tensor, feed_dict)
 print(result_tensor) # Correct valeu : [11,22,33,44,55]
 
-# Leture2 : Design Model
+    # Leture2 : Design Model
 
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
@@ -82,34 +82,34 @@ HIDDEN2_SIZE = 8
 CLASSES = len(label_data[0]) # 5
 Learning_Rate = 0.05
 
-x = tf.placeholder(tf.float32, shape = [None, INPUT_SIZE]) # 'None' postions is Batch_size (input_data demension was 2D)
-y_ = tf.placeholder(tf.float32, shape = [None, CLASSES]) # label_data demension was 1D, so i don't need write Batch_size value
+x = tf.placeholder(tf.float32, shape = [None, INPUT_SIZE], name = "x") # 'None' postions is Batch_size (input_data demension was 2D)
+y_ = tf.placeholder(tf.float32, shape = [None, CLASSES], name = "y_") # label_data demension was 1D, so i don't need write Batch_size value
 
 tensor_map = {x:input_data, y_ : label_data}
 
  # Input_data - Hidden1 layer
-W_h1 = tf.Variable(tf.truncated_normal(shape = [INPUT_SIZE, HIDDEN1_SIZE], dtype = tf.float32)) # weight paramater
-b_h1 = tf.Variable(tf.zeros(shape = [HIDDEN1_SIZE]), dtype = tf.float32)
-
-hidden1 = tf.sigmoid(tf.matmul(x, W_h1) + b_h1) # matrix production at input-hidden1 layer
-
+W_h1 = tf.Variable(tf.truncated_normal(shape = [INPUT_SIZE, HIDDEN1_SIZE], dtype = tf.float32), name = "W_h1") # weight paramater
+b_h1 = tf.Variable(tf.zeros(shape = [HIDDEN1_SIZE]), dtype = tf.float32, name = "b_h1")
  # Hidden1 layer - Hidden2_layer
-W_h2 = tf.Variable(tf.truncated_normal(shape = [HIDDEN1_SIZE, HIDDEN2_SIZE], dtype = tf.float32))
-b_h2 = tf.Variable(tf.zeros(shape = [HIDDEN2_SIZE], dtype = tf.float32))
-
-hidden2 = tf.sigmoid(tf.matmul(hidden1, W_h2) + b_h2) # matrix production at hidden1 layer-hidden2 layer
-
+W_h2 = tf.Variable(tf.truncated_normal(shape = [HIDDEN1_SIZE, HIDDEN2_SIZE], dtype = tf.float32), name = "W_h2")
+b_h2 = tf.Variable(tf.zeros(shape = [HIDDEN2_SIZE], dtype = tf.float32), name = "b_h2")
  # Hidden2 layer - label(output)
-W_o = tf.Variable(tf.truncated_normal(shape = [HIDDEN2_SIZE, CLASSES], dtype = tf.float32))
-b_0 = tf.Variable(tf.zeros(shape = [CLASSES], dtype = tf.float32))
+W_o = tf.Variable(tf.truncated_normal(shape = [HIDDEN2_SIZE, CLASSES], dtype = tf.float32), name = "W_o")
+b_o = tf.Variable(tf.zeros(shape = [CLASSES], dtype = tf.float32), name = "b_o")
 
-y = tf.sigmoid(tf.matmul(hidden2, W_o) + b_0) # matrix production at hidden2 layer - label(output)
+param_list = [W_h1, b_h1, W_h2, b_h2, W_o, b_o]
+saver = tf.train.Saver(param_list)
 
-# Training 
+hidden1 = tf.sigmoid(tf.matmul(x, W_h1) + b_h1, name = "hidden1") # matrix production at input-hidden1 layer
+hidden2 = tf.sigmoid(tf.matmul(hidden1, W_h2) + b_h2, name = "hidden2") # matrix production at hidden1 layer-hidden2 layer
+y = tf.sigmoid(tf.matmul(hidden2, W_o) + b_o, name = "y") # matrix production at hidden2 layer - label(output)
+
+
+
+# Training (Lecture 2)
  # Csot Function
 cost = tf.reduce_mean(-y_*tf.log(y)-(1-y_)*tf.log(1-y)) # if we have y valeu is 1, so we use (1-y)
 train = tf.train.GradientDescentOptimizer(Learning_Rate).minimize(cost)
-
  
 sess = tf.Session()
 init = tf.global_variables_initializer()
@@ -119,19 +119,42 @@ for i in range(1000):
     if i % 100 == 0:
         print("step: ", i)
         print("loss: ", loss)
+sess.close()
 
-# Leture3 : Evaluation & Model Save
+    # Leture3 : Evaluation & Model Save
+
+# Training (Lecture 3)
+cost = tf.reduce_sum(-y_*tf.log(y)-(1-y_)*tf.log(1-y), reduction_indices = 1)
+cost = tf.reduce_mean(cost)
+train = tf.train.GradientDescentOptimizer(Learning_Rate).minimize(cost)
+ 
+comp_pred = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+accuracy = tf.reduce_mean(tf.cast(comp_pred, tf.float32))
+
+sess = tf.Session()
+init = tf.global_variables_initializer()
+sess.run(init)
+for i in range(1000):
+    _, loss, acc = sess.run([train, cost, accuracy], feed_dict = tensor_map)
+    
+    if i % 100 == 0:
+        saver.save(sess, "./python/tensorflow_live.ckpt")
+        print("---------------------")
+        print("Step     : ", i)
+        print("Loss     : ", loss)
+        print("Accuracy : ", acc)
+sess.close()
 
 
+    # Leture4 : Model Restore
+    
+sess = tf.Session()
+#sess.run(tf.global_variables_initializer()) # we use saver.retore code so, we don't need initialize function.
+saver.restore(sess, "./python/tensorflow_live.ckpt") # import saved weight paramater data
+result = sess.run(y, tensor_map)
+print(result)
 
-
-
-
-
-
-
-
-
+sess.close()
 
 
 
