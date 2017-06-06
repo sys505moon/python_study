@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -67,6 +68,8 @@ print(result_tensor) # Correct valeu : [11,22,33,44,55]
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
+import tensorflow as tf
+
 input_data = [[1,5,3,7,8,10,12],
               [5,8,10,3,9,7,1]
               ]
@@ -88,12 +91,15 @@ y_ = tf.placeholder(tf.float32, shape = [None, CLASSES], name = "y_") # label_da
 tensor_map = {x:input_data, y_ : label_data}
 
  # Input_data - Hidden1 layer
+
 W_h1 = tf.Variable(tf.truncated_normal(shape = [INPUT_SIZE, HIDDEN1_SIZE], dtype = tf.float32), name = "W_h1") # weight paramater
 b_h1 = tf.Variable(tf.zeros(shape = [HIDDEN1_SIZE]), dtype = tf.float32, name = "b_h1")
  # Hidden1 layer - Hidden2_layer
+
 W_h2 = tf.Variable(tf.truncated_normal(shape = [HIDDEN1_SIZE, HIDDEN2_SIZE], dtype = tf.float32), name = "W_h2")
 b_h2 = tf.Variable(tf.zeros(shape = [HIDDEN2_SIZE], dtype = tf.float32), name = "b_h2")
  # Hidden2 layer - label(output)
+
 W_o = tf.Variable(tf.truncated_normal(shape = [HIDDEN2_SIZE, CLASSES], dtype = tf.float32), name = "W_o")
 b_o = tf.Variable(tf.zeros(shape = [CLASSES], dtype = tf.float32), name = "b_o")
 
@@ -107,68 +113,34 @@ with tf.name_scope("hidden_layer_2") as h2scope:
 with tf.name_scope("output_layer") as oscope:
     y = tf.sigmoid(tf.matmul(hidden2, W_o) + b_o, name = "y") # matrix production at hidden2 layer - label(output)
 
-
-
-# Training (Lecture 2)
- # Csot Function
-cost = tf.reduce_mean(-y_*tf.log(y)-(1-y_)*tf.log(1-y)) # if we have y valeu is 1, so we use (1-y)
-train = tf.train.GradientDescentOptimizer(Learning_Rate).minimize(cost)
- 
-sess = tf.Session()
-init = tf.global_variables_initializer()
-sess.run(init)
-for i in range(1000):
-    _, loss = sess.run([train, cost], feed_dict = tensor_map)
-    if i % 100 == 0:
-        print("step: ", i)
-        print("loss: ", loss)
-sess.close()
-
-    # Leture3 : Evaluation & Model Save
-
-# Training (Lecture 3)
-cost = tf.reduce_sum(-y_*tf.log(y)-(1-y_)*tf.log(1-y), reduction_indices = 1)
-cost = tf.reduce_mean(cost)
-train = tf.train.GradientDescentOptimizer(Learning_Rate).minimize(cost)
-
-comp_pred = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
-accuracy = tf.reduce_mean(tf.cast(comp_pred, tf.float32))
-
-sess = tf.Session()
-init = tf.global_variables_initializer()
-sess.run(init)
-for i in range(1000):
-    _, loss, acc = sess.run([train, cost, accuracy], feed_dict = tensor_map)
-    if i % 100 == 0:
-        saver.save(sess, "./python/tensorflow_live.ckpt")
-        print("---------------------")
-        print("Step     : ", i)
-        print("Loss     : ", loss)
-        print("Accuracy : ", acc)
-sess.close()
-
-    # Leture5 : TensorBoard 
-
+with tf.name_scope("calculation_costs") as calscope:
+    cost = tf.reduce_sum(-y_*tf.log(y)-(1-y_)*tf.log(1-y), reduction_indices = 1)
+    cost = tf.reduce_mean(cost)
+with tf.name_scope("training") as train_scope:
+    train = tf.train.GradientDescentOptimizer(Learning_Rate).minimize(cost)
+with tf.name_scope("evaluation") as eval_scope:
+    comp_pred = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+    accuracy = tf.reduce_mean(tf.cast(comp_pred, tf.float32))
 
 merge = tf.summary.merge_all()
 with tf.Session() as sess:
+    train_writer = tf.summary.FileWriter("./python/summarie/", sess.graph)
+#    new_saver = tf.train.import_meta_graph('./python/tensorflow_live.ckpt.meta')
     saver.restore(sess, "./python/tensorflow_live.ckpt") # import saved weight paramater data
+#    new_saver.restore(sess, tf.train.latest_checkpoint('./'))
+#    init = tf.global_variables_initializer()
+#    sess.run(init)    
     for i in range(1000):
         _, loss, acc = sess.run([train, cost, accuracy], feed_dict = tensor_map)
-        
         if i % 100 == 0:
+#            train_writer = tf.summary.FileWriter("./python/summarie/", sess.graph)
             saver.save(sess, "./python/tensorflow_live.ckpt")
-            train_writer = tf.summary.FileWriter("./python/summarie/", sess.graph)
             print("---------------------")
             print("Step     : ", i)
             print("Loss     : ", loss)
             print("Accuracy : ", acc)
-
-
-
-
-
-
+    
+ 
 
 
 
