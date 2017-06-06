@@ -100,9 +100,12 @@ b_o = tf.Variable(tf.zeros(shape = [CLASSES], dtype = tf.float32), name = "b_o")
 param_list = [W_h1, b_h1, W_h2, b_h2, W_o, b_o]
 saver = tf.train.Saver(param_list)
 
-hidden1 = tf.sigmoid(tf.matmul(x, W_h1) + b_h1, name = "hidden1") # matrix production at input-hidden1 layer
-hidden2 = tf.sigmoid(tf.matmul(hidden1, W_h2) + b_h2, name = "hidden2") # matrix production at hidden1 layer-hidden2 layer
-y = tf.sigmoid(tf.matmul(hidden2, W_o) + b_o, name = "y") # matrix production at hidden2 layer - label(output)
+with tf.name_scope("hidden_layer_1") as h1scope:
+    hidden1 = tf.sigmoid(tf.matmul(x, W_h1) + b_h1, name = "hidden1") # matrix production at input-hidden1 layer
+with tf.name_scope("hidden_layer_2") as h2scope:
+    hidden2 = tf.sigmoid(tf.matmul(hidden1, W_h2) + b_h2, name = "hidden2") # matrix production at hidden1 layer-hidden2 layer
+with tf.name_scope("output_layer") as oscope:
+    y = tf.sigmoid(tf.matmul(hidden2, W_o) + b_o, name = "y") # matrix production at hidden2 layer - label(output)
 
 
 
@@ -127,7 +130,7 @@ sess.close()
 cost = tf.reduce_sum(-y_*tf.log(y)-(1-y_)*tf.log(1-y), reduction_indices = 1)
 cost = tf.reduce_mean(cost)
 train = tf.train.GradientDescentOptimizer(Learning_Rate).minimize(cost)
- 
+
 comp_pred = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
 accuracy = tf.reduce_mean(tf.cast(comp_pred, tf.float32))
 
@@ -136,7 +139,6 @@ init = tf.global_variables_initializer()
 sess.run(init)
 for i in range(1000):
     _, loss, acc = sess.run([train, cost, accuracy], feed_dict = tensor_map)
-    
     if i % 100 == 0:
         saver.save(sess, "./python/tensorflow_live.ckpt")
         print("---------------------")
@@ -145,23 +147,22 @@ for i in range(1000):
         print("Accuracy : ", acc)
 sess.close()
 
-
-    # Leture4 : Model Restore
-    
-sess = tf.Session()
-#sess.run(tf.global_variables_initializer()) # we use saver.retore code so, we don't need initialize function.
-saver.restore(sess, "./python/tensorflow_live.ckpt") # import saved weight paramater data
-result = sess.run(y, tensor_map)
-print(result)
-
-sess.close()
+    # Leture5 : TensorBoard 
 
 
-
-
-
-
-
+merge = tf.summary.merge_all()
+with tf.Session() as sess:
+    saver.restore(sess, "./python/tensorflow_live.ckpt") # import saved weight paramater data
+    for i in range(1000):
+        _, loss, acc = sess.run([train, cost, accuracy], feed_dict = tensor_map)
+        
+        if i % 100 == 0:
+            saver.save(sess, "./python/tensorflow_live.ckpt")
+            train_writer = tf.summary.FileWriter("./python/summarie/", sess.graph)
+            print("---------------------")
+            print("Step     : ", i)
+            print("Loss     : ", loss)
+            print("Accuracy : ", acc)
 
 
 
